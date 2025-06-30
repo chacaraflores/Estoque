@@ -1,0 +1,71 @@
+{% load custom_filters %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Relatório de Estoque</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Relatório de Estoque</h1>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>Qtd Atual</th>
+                <th>Reservado</th>
+                <th>Disponível</th>
+                <th>Qtd Mínima</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in materiais %}
+            <tr>
+                <td>{{ item.nome }}</td>
+                <td>{{ item.quantidade_atual|default:0 }}</td>
+                <td>{{ item.reservado|default:0 }}</td>
+                <td>{{ item.quantidade_atual|sub:item.reservado|default:0 }}</td>
+                <td>{{ item.quantidade_minima|default:0 }}</td>
+                <td>
+                    {% if item.estoque_baixo %}
+                    <span style="color: red;">Estoque Baixo</span>
+                    {% else %}
+                    <span style="color: green;">Ok</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6">Nenhum material encontrado.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+
+</html>

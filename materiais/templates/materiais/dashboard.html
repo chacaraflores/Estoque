@@ -1,0 +1,267 @@
+{% extends 'materiais/base.html' %}
+
+{% block title %}Dashboard - Sistema de Estoque{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="page-title">
+        <i class="bi bi-speedometer2"></i> Dashboard
+    </h1>
+    <div class="text-muted">
+        <i class="bi bi-calendar3"></i>
+        Última atualização: {{ "now"|date:"d/m/Y H:i" }}
+    </div>
+</div>
+
+<!-- Cards de Estatísticas -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="bi bi-box-seam display-4 text-primary mb-2"></i>
+                <div class="stats-number">{{ total_materiais }}</div>
+                <p class="text-muted mb-0">Total de Materiais</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="bi bi-exclamation-triangle display-4 text-warning mb-2"></i>
+                <div class="stats-number text-warning">{{ materiais_estoque_baixo }}</div>
+                <p class="text-muted mb-0">Estoque Baixo</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="bi bi-cart-plus display-4 text-info mb-2"></i>
+                <div class="stats-number text-info">{{ solicitacoes_pendentes }}</div>
+                <p class="text-muted mb-0">Solicitações Pendentes</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="bi bi-people display-4 text-success mb-2"></i>
+                <div class="stats-number text-success">{{ user.username }}</div>
+                <p class="text-muted mb-0">Usuário Logado</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Materiais com Estoque Baixo -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-exclamation-triangle text-warning"></i>
+                    Materiais com Estoque Baixo
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if materiais_baixo %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Material</th>
+                                    <th>Atual</th>
+                                    <th>Mínimo</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for material in materiais_baixo %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'detalhe_material' material.id %}" class="text-decoration-none">
+                                            {{ material.nome }}
+                                        </a>
+                                        <br>
+                                        <small class="text-muted">{{ material.categoria }}</small>
+                                    </td>
+                                    <td>{{ material.quantidade_atual }}</td>
+                                    <td>{{ material.quantidade_minima }}</td>
+                                    <td>
+                                        <span class="badge badge-estoque-baixo">
+                                            <i class="bi bi-exclamation-triangle"></i> Baixo
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="{% url 'lista_materiais' %}?estoque_baixo=on" class="btn btn-outline-warning">
+                            <i class="bi bi-eye"></i> Ver Todos
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-check-circle display-4 text-success"></i>
+                        <p class="mt-2 text-muted">Todos os materiais estão com estoque adequado!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Últimas Movimentações -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-arrow-left-right"></i>
+                    Últimas Movimentações
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if ultimas_movimentacoes %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Material</th>
+                                    <th>Tipo</th>
+                                    <th>Qtd</th>
+                                    <th>Data</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for mov in ultimas_movimentacoes %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'detalhe_material' mov.material.id %}" class="text-decoration-none">
+                                            {{ mov.material.nome|truncatechars:20 }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        {% if mov.tipo == 'entrada' %}
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-arrow-up"></i> Entrada
+                                            </span>
+                                        {% elif mov.tipo == 'saida' %}
+                                            <span class="badge bg-danger">
+                                                <i class="bi bi-arrow-down"></i> Saída
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-info">
+                                                <i class="bi bi-arrow-repeat"></i> Ajuste
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ mov.quantidade }}</td>
+                                    <td>
+                                        <small>{{ mov.data_movimentacao|date:"d/m H:i" }}</small>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-inbox display-4 text-muted"></i>
+                        <p class="mt-2 text-muted">Nenhuma movimentação registrada ainda.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Estatísticas por Categoria -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-pie-chart"></i>
+                    Estatísticas por Categoria
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for categoria in stats_categoria %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card border-start border-4" style="border-color: 
+                            {% if categoria.tipo == 'escritorio' %}#007bff
+                            {% elif categoria.tipo == 'limpeza' %}#28a745
+                            {% else %}#ffc107{% endif %} !important;">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    {% if categoria.tipo == 'escritorio' %}
+                                        <i class="bi bi-pencil-square text-primary"></i>
+                                    {% elif categoria.tipo == 'limpeza' %}
+                                        <i class="bi bi-droplet text-success"></i>
+                                    {% else %}
+                                        <i class="bi bi-tools text-warning"></i>
+                                    {% endif %}
+                                    {{ categoria.get_tipo_display }}
+                                </h6>
+                                <p class="card-text">
+                                    <strong>{{ categoria.total_materiais }}</strong> materiais<br>
+                                    {% if categoria.valor_total %}
+                                        <small class="text-muted">
+                                            Valor: R$ {{ categoria.valor_total|floatformat:2 }}
+                                        </small>
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Ações Rápidas -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-lightning"></i>
+                    Ações Rápidas
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'adicionar_material' %}" class="btn btn-primary w-100">
+                            <i class="bi bi-plus-circle"></i> Novo Material
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'lista_materiais' %}" class="btn btn-outline-primary w-100">
+                            <i class="bi bi-box-seam"></i> Ver Materiais
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'nova_solicitacao_compra' %}" class="btn btn-success w-100">
+                            <i class="bi bi-cart-plus"></i> Nova Solicitação
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'relatorio_estoque' %}" class="btn btn-outline-success w-100">
+                            <i class="bi bi-graph-up"></i> Relatório
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,235 @@
+{% extends 'materiais/base.html' %}
+
+{% block title %}Movimentar Estoque - {{ material.nome }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="page-title">
+        <i class="bi bi-arrow-left-right"></i> Movimentar Estoque
+    </h1>
+    <a href="{% url 'detalhe_material' material.id %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-box-seam"></i> {{ material.nome }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" id="movimentacaoForm">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.tipo.label_tag }}
+                                {{ form.tipo }}
+                                {% if form.tipo.errors %}
+                                    <div class="text-danger small">{{ form.tipo.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.quantidade.label_tag }}
+                                <div class="input-group">
+                                    {{ form.quantidade }}
+                                    <span class="input-group-text">{{ material.unidade_medida }}</span>
+                                </div>
+                                {% if form.quantidade.errors %}
+                                    <div class="text-danger small">{{ form.quantidade.errors }}</div>
+                                {% endif %}
+                                <small class="form-text text-muted" id="quantidadeHelp">
+                                    Para entrada/saída: quantidade a movimentar. Para ajuste: quantidade final desejada.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.motivo.label_tag }}
+                        {{ form.motivo }}
+                        {% if form.motivo.errors %}
+                            <div class="text-danger small">{{ form.motivo.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-4">
+                        {{ form.observacoes.label_tag }}
+                        {{ form.observacoes }}
+                        {% if form.observacoes.errors %}
+                            <div class="text-danger small">{{ form.observacoes.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Preview da Movimentação -->
+                    <div class="alert alert-info" id="previewMovimentacao" style="display: none;">
+                        <h6><i class="bi bi-info-circle"></i> Preview da Movimentação</h6>
+                        <p class="mb-0">
+                            <strong>Quantidade atual:</strong> <span id="qtdAtual">{{ material.quantidade_atual }}</span> {{ material.unidade_medida }}<br>
+                            <strong>Nova quantidade:</strong> <span id="qtdNova">-</span> {{ material.unidade_medida }}
+                        </p>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check-circle"></i> Registrar Movimentação
+                        </button>
+                        <a href="{% url 'detalhe_material' material.id %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <!-- Status Atual -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-graph-up"></i> Status Atual
+                </h6>
+            </div>
+            <div class="card-body text-center">
+                <div class="display-4 {% if material.estoque_baixo %}text-danger{% else %}text-success{% endif %}">
+                    {{ material.quantidade_atual }}
+                </div>
+                <p class="text-muted">{{ material.unidade_medida }} em estoque</p>
+                
+                <div class="row text-center mt-3">
+                    <div class="col-6">
+                        <div class="border-end">
+                            <div class="h6 text-warning">{{ material.quantidade_minima }}</div>
+                            <small class="text-muted">Mínimo</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="h6 text-info">{{ material.categoria.get_tipo_display }}</div>
+                        <small class="text-muted">Categoria</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tipos de Movimentação -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-info-circle"></i> Tipos de Movimentação
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <span class="badge bg-success">
+                        <i class="bi bi-arrow-up"></i> Entrada
+                    </span>
+                    <small class="text-muted d-block">Adiciona itens ao estoque (compras, doações, etc.)</small>
+                </div>
+                <div class="mb-2">
+                    <span class="badge bg-danger">
+                        <i class="bi bi-arrow-down"></i> Saída
+                    </span>
+                    <small class="text-muted d-block">Remove itens do estoque (uso, descarte, etc.)</small>
+                </div>
+                <div class="mb-2">
+                    <span class="badge bg-info">
+                        <i class="bi bi-arrow-repeat"></i> Ajuste
+                    </span>
+                    <small class="text-muted d-block">Corrige a quantidade para o valor informado</small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Motivos Comuns -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-lightbulb"></i> Motivos Comuns
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <strong>Entrada:</strong>
+                    <ul class="small text-muted mb-2">
+                        <li>Compra</li>
+                        <li>Doação</li>
+                        <li>Devolução</li>
+                    </ul>
+                </div>
+                <div class="mb-2">
+                    <strong>Saída:</strong>
+                    <ul class="small text-muted mb-2">
+                        <li>Uso normal</li>
+                        <li>Descarte</li>
+                        <li>Empréstimo</li>
+                    </ul>
+                </div>
+                <div>
+                    <strong>Ajuste:</strong>
+                    <ul class="small text-muted mb-0">
+                        <li>Inventário</li>
+                        <li>Correção de erro</li>
+                        <li>Perda/Quebra</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tipoSelect = document.getElementById('id_tipo');
+    const quantidadeInput = document.getElementById('id_quantidade');
+    const previewDiv = document.getElementById('previewMovimentacao');
+    const qtdAtualSpan = document.getElementById('qtdAtual');
+    const qtdNovaSpan = document.getElementById('qtdNova');
+    const quantidadeHelp = document.getElementById('quantidadeHelp');
+    
+    const quantidadeAtual = {{ material.quantidade_atual }};
+    
+    function updatePreview() {
+        const tipo = tipoSelect.value;
+        const quantidade = parseInt(quantidadeInput.value) || 0;
+        
+        if (tipo && quantidade > 0) {
+            let novaQuantidade;
+            
+            switch(tipo) {
+                case 'entrada':
+                    novaQuantidade = quantidadeAtual + quantidade;
+                    quantidadeHelp.textContent = 'Quantidade que será adicionada ao estoque atual.';
+                    break;
+                case 'saida':
+                    novaQuantidade = Math.max(0, quantidadeAtual - quantidade);
+                    quantidadeHelp.textContent = 'Quantidade que será removida do estoque atual.';
+                    break;
+                case 'ajuste':
+                    novaQuantidade = quantidade;
+                    quantidadeHelp.textContent = 'Quantidade final que ficará no estoque (substitui a atual).';
+                    break;
+                default:
+                    novaQuantidade = quantidadeAtual;
+            }
+            
+            qtdNovaSpan.textContent = novaQuantidade;
+            qtdNovaSpan.className = novaQuantidade < {{ material.quantidade_minima }} ? 'text-danger fw-bold' : 'text-success fw-bold';
+            previewDiv.style.display = 'block';
+        } else {
+            previewDiv.style.display = 'none';
+        }
+    }
+    
+    tipoSelect.addEventListener('change', updatePreview);
+    quantidadeInput.addEventListener('input', updatePreview);
+});
+</script>
+{% endblock %}
+

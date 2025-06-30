@@ -1,0 +1,226 @@
+{% extends 'materiais/base.html' %}
+
+{% block title %}Nova Solicitação de Compra - Sistema de Estoque{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="page-title">
+        <i class="bi bi-cart-plus"></i> Nova Solicitação de Compra
+    </h1>
+    <a href="{% url 'solicitacoes_compra' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-form"></i> Dados da Solicitação
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        {{ form.material.label_tag }}
+                        {{ form.material }}
+                        {% if form.material.errors %}
+                            <div class="text-danger small">{{ form.material.errors }}</div>
+                        {% endif %}
+                        <small class="form-text text-muted">
+                            Selecione o material que precisa ser comprado
+                        </small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.quantidade_solicitada.label_tag }}
+                        <div class="input-group">
+                            {{ form.quantidade_solicitada }}
+                            <span class="input-group-text" id="unidadeMedida">unidade</span>
+                        </div>
+                        {% if form.quantidade_solicitada.errors %}
+                            <div class="text-danger small">{{ form.quantidade_solicitada.errors }}</div>
+                        {% endif %}
+                        <small class="form-text text-muted">
+                            Quantidade necessária para compra
+                        </small>
+                    </div>
+                    
+                    <div class="mb-4">
+                        {{ form.justificativa.label_tag }}
+                        {{ form.justificativa }}
+                        {% if form.justificativa.errors %}
+                            <div class="text-danger small">{{ form.justificativa.errors }}</div>
+                        {% endif %}
+                        <small class="form-text text-muted">
+                            Explique o motivo da necessidade de compra deste material
+                        </small>
+                    </div>
+                    
+                    <!-- Informações do Material Selecionado -->
+                    <div class="alert alert-info" id="infoMaterial" style="display: none;">
+                        <h6><i class="bi bi-info-circle"></i> Informações do Material</h6>
+                        <div id="detalheMaterial"></div>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Criar Solicitação
+                        </button>
+                        <a href="{% url 'solicitacoes_compra' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <!-- Dicas -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-lightbulb"></i> Dicas para Solicitação
+                </h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <i class="bi bi-check-circle text-success"></i>
+                        <strong>Material:</strong> Verifique se o material já existe no sistema
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-check-circle text-success"></i>
+                        <strong>Quantidade:</strong> Considere o consumo médio e prazo de entrega
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-check-circle text-success"></i>
+                        <strong>Justificativa:</strong> Seja claro e específico sobre a necessidade
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-check-circle text-success"></i>
+                        <strong>Urgência:</strong> Mencione se há urgência na aquisição
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Status da Solicitação -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-flow-chart"></i> Fluxo da Solicitação
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex flex-column">
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="badge bg-primary me-2">1</span>
+                        <small>Criação da solicitação</small>
+                    </div>
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="badge bg-warning me-2">2</span>
+                        <small>Análise e aprovação</small>
+                    </div>
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="badge bg-success me-2">3</span>
+                        <small>Compra do material</small>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <span class="badge bg-info me-2">4</span>
+                        <small>Entrada no estoque</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Materiais com Estoque Baixo -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-exclamation-triangle text-warning"></i> Estoque Baixo
+                </h6>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted mb-2">Materiais que podem precisar de reposição:</p>
+                <div id="materiaisEstoqueBaixo">
+                    <small class="text-muted">Carregando...</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const materialSelect = document.getElementById('id_material');
+    const unidadeMedidaSpan = document.getElementById('unidadeMedida');
+    const infoMaterialDiv = document.getElementById('infoMaterial');
+    const detalheMaterialDiv = document.getElementById('detalheMaterial');
+    
+    // Dados dos materiais (seria melhor vir via AJAX)
+    const materiaisData = {};
+    
+    materialSelect.addEventListener('change', function() {
+        const materialId = this.value;
+        
+        if (materialId) {
+            // Aqui você faria uma requisição AJAX para buscar os dados do material
+            // Por simplicidade, vamos simular
+            fetch(`/api/material/${materialId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    unidadeMedidaSpan.textContent = data.unidade_medida || 'unidade';
+                    
+                    detalheMaterialDiv.innerHTML = `
+                        <p class="mb-1"><strong>Categoria:</strong> ${data.categoria}</p>
+                        <p class="mb-1"><strong>Estoque atual:</strong> ${data.quantidade_atual} ${data.unidade_medida}</p>
+                        <p class="mb-1"><strong>Estoque mínimo:</strong> ${data.quantidade_minima} ${data.unidade_medida}</p>
+                        ${data.estoque_baixo ? '<p class="mb-0 text-danger"><i class="bi bi-exclamation-triangle"></i> <strong>Estoque baixo!</strong></p>' : ''}
+                    `;
+                    
+                    infoMaterialDiv.style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Erro ao buscar dados do material:', error);
+                    // Fallback: apenas atualizar unidade de medida
+                    const selectedOption = materialSelect.options[materialSelect.selectedIndex];
+                    const text = selectedOption.text;
+                    // Tentar extrair unidade de medida do texto (implementação simples)
+                    unidadeMedidaSpan.textContent = 'unidade';
+                    infoMaterialDiv.style.display = 'none';
+                });
+        } else {
+            unidadeMedidaSpan.textContent = 'unidade';
+            infoMaterialDiv.style.display = 'none';
+        }
+    });
+    
+    // Carregar materiais com estoque baixo
+    fetch('/api/materiais-estoque-baixo/')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('materiaisEstoqueBaixo');
+            if (data.length > 0) {
+                container.innerHTML = data.map(material => 
+                    `<div class="small mb-1">
+                        <span class="text-danger">•</span> ${material.nome}
+                        <br><small class="text-muted ms-2">${material.quantidade_atual}/${material.quantidade_minima} ${material.unidade_medida}</small>
+                    </div>`
+                ).join('');
+            } else {
+                container.innerHTML = '<small class="text-success">Todos os materiais estão com estoque adequado!</small>';
+            }
+        })
+        .catch(error => {
+            console.error('Erro ao carregar materiais:', error);
+            document.getElementById('materiaisEstoqueBaixo').innerHTML = '<small class="text-muted">Erro ao carregar dados</small>';
+        });
+});
+</script>
+{% endblock %}
+
