@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from .views import MaterialDeleteView
 
 urlpatterns = [
     # Autenticação
@@ -15,6 +16,8 @@ urlpatterns = [
     path('materiais/<int:material_id>/', views.detalhe_material, name='detalhe_material'),
     path('materiais/<int:material_id>/editar/', views.editar_material, name='editar_material'),
     path('materiais/<int:material_id>/movimentar/', views.movimentar_estoque, name='movimentar_estoque'),
+    path('materiais/<int:pk>/excluir/', MaterialDeleteView.as_view(), name='excluir_material'),
+    
     
     # Relatórios
     path('relatorio/', views.relatorio_estoque, name='relatorio_estoque'),

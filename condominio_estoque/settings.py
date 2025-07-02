@@ -25,7 +25,9 @@ SECRET_KEY = 'django-insecure-z530c=yz%2foebj(d7t2^%pq7wi&hmr4(tl)v@11uhivk4i$uq
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+
+#ALLOWED_HOSTS = ['Chacaraflores.pythonanywhere.com']
 
 # CSRF Configuration
 CSRF_TRUSTED_ORIGINS = [
